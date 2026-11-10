@@ -1,0 +1,427 @@
+---
+title: "Summary Tables with gtsummary"
+subtitle: "Revealjs Presentation"
+author: "Aldo Naranjo"
+institute: "IBM 6500, Cal Poly Pomona"
+date: "`r Sys.Date()`"
+format:
+  revealjs:
+    theme: serif
+    width: 1600
+    height: 900
+    footer: M08 Reflection | Summary Tables with gtsummary
+    logo: images/logo.svg
+    transition: slide
+    transition-speed: default
+    incremental: false
+    toc: true
+    toc-depth: 1
+    slide-number: true
+    scrollable: true
+    smaller: true
+    code-fold: false
+    code-overflow: wrap
+    number-sections: false
+    number-depth: 5
+    embed-resources: true
+    css: styles.css
+bibliography: references.bib
+editor: visual
+execute:
+  echo: true
+  freeze: auto
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# install.packages(c("tidyverse", "gtsummary", "gt", "cardx", "broom.helpers", "car"))
+library(tidyverse)
+library(gtsummary)
+library(gt)
+
+# Compact theme so the tables fit on slides
+theme_gtsummary_compact()
+```
+
+# About This Reflection {.section-slide background-color="#f4efe6"}
+
+## What This Deck Covers
+
+::: incremental
+- **Prompt 1:** what {gtsummary} can do, based on Dr. Jung's lecture, and how it helps me in school and at work
+- **Prompt 2:** how {gtsummary} differs from {gt} and {gtExtras}, and three things I learned from Daniel Sjoberg's talk
+- **Prompt 3:** a cross tabulation with a chi-square test on our MSDM CEP data
+- **Prompt 4:** a multiple (logistic) regression on the same data
+:::
+
+::: notes
+The deck follows the four essay prompts in order. Every prompt is restated on its own slide so someone who has not seen the assignment can follow along.
+:::
+
+# Prompt 1: What {gtsummary} Can Do {.section-slide background-color="#f4efe6"}
+
+## Prompt 1 {transition="fade"}
+
+::: prompt
+In Step 1, you have seen how to create a summary table and modify it for various statistical analyses. Summarize the package's capabilities as explained by the speaker. How may the {gtsummary} benefit you for your school work or career?
+:::
+
+The short version: {gtsummary} turns a data frame or a fitted model into a table that is ready to drop into a report, with the statistics already computed and formatted. Dr. Jung's lecture walked through that in layers [@jung2026gtsummary].
+
+. . .
+
+::::: columns
+::: {.column width="50%"}
+### Describing data
+
+- `tbl_summary()` detects each variable's type and picks a sensible summary on its own (median and IQR for continuous variables, n and percent for categorical ones)
+- `by =` splits the table into groups, and `add_overall()` keeps a total column
+- Arguments like `statistic`, `label`, `digits`, `type = "continuous2"`, and `missing_text` let me change what shows up without rebuilding the table
+:::
+
+::: {.column width="50%"}
+### Testing differences
+
+- `add_p()` runs a test for each row: Wilcoxon rank sum for continuous variables and Pearson's chi-square for categorical ones by default
+- `add_difference()` switches to a Welch t-test with the mean difference and its confidence interval, and with `adj.vars` it becomes an ANCOVA
+- `add_q()` adjusts p-values for multiple comparisons
+- `tbl_cross()` builds a cleaner two way table for chi-square
+:::
+:::::
+
+## Prompt 1: Models, Combining, and Styling
+
+::::: columns
+::: {.column width="50%"}
+### Model output
+
+- `tbl_regression()` reads a fitted `lm()` or `glm()` model and shows estimates, confidence intervals, and p-values
+- `exponentiate = TRUE` turns logistic coefficients into odds ratios
+- `add_global_p()`, `bold_p()`, `add_vif()`, and `add_glance_table()` add an overall test per variable, highlight significant rows, check multicollinearity, and show fit statistics like AIC
+- `tbl_uvregression()` fits one model per predictor in a single call
+:::
+
+::: {.column width="50%"}
+### Putting tables together
+
+- `tbl_merge()` places tables side by side and `tbl_stack()` stacks them
+- `as_gt()` hands the table to {gt} for extra formatting like headers
+- Themes such as `theme_gtsummary_journal("jama")` restyle every table to match a journal's rules in one line
+:::
+:::::
+
+::: aside
+This deck uses `theme_gtsummary_compact()` so the tables fit on slides.
+:::
+
+## Prompt 1: How It Helps Me
+
+::: fragment
+**School.** Our CEP report needs results tables for each analytics objective. Before this module, I would have run a test, copied numbers into a Word table, and hoped I did not mistype anything. With {gtsummary}, the table comes straight from the model, so if the data changes the table updates itself when I render.
+:::
+
+::: fragment
+**Work.** As a PPC analyst I compare things across groups all the time: conversion rates across campaigns, lead quality across ad groups, call volume before and after a change. A `tbl_summary(by = campaign) |> add_p()` table answers "is this difference real or just noise?" in a format a client can read, which is a lot stronger than two percentages side by side.
+:::
+
+::: {.fragment .takeaway}
+The biggest benefit is trust. The numbers in the table are the numbers from the analysis, with no copy and paste step in between.
+:::
+
+::: notes
+Point out that the second half of this deck is a working example of exactly this: the CEP tables and the sentences that describe them are generated from the data at render time.
+:::
+
+# Prompt 2: Learning from the Package's Creator {.section-slide background-color="#f4efe6"}
+
+## Prompt 2.1: {gtsummary} vs. {gt} vs. {gtExtras} {transition="convex"}
+
+::: prompt
+In Step 2, you watched the extended presentation of the {gtsummary} package by Dr. Daniel Sjoberg, the very creator of the package. 2.1. How does it differ from gt and gtExtras?
+:::
+
+| Package | Main job | Who it is for |
+|-------------------|---------------------------|---------------------------|
+| **{gt}** | A grammar for *displaying* any table: headers, spanners, footnotes, colors, number formats [@iannone_gt] | Anyone who already has the exact numbers and wants them to look good |
+| **{gtExtras}** | Add ons for {gt}: themes plus small graphics inside cells like sparklines, bar charts, and color scales [@mock_gtextras] | People building dashboards or visual tables |
+| **{gtsummary}** | *Computes* the statistics (summaries, tests, model results) and then builds the table [@sjoberg2021] | Analysts and researchers reporting results |
+
+. . .
+
+Sjoberg described {gt} as RStudio's table package, the "ggplot of tables," and said {gtsummary} uses {gt} in the background to print. His team built {gtsummary} at Memorial Sloan Kettering to make the tables biostatisticians produce most often, like Table 1, cross tabs, and regression summaries, in one line of code. So {gt} and {gtExtras} start *after* the analysis is done and style whatever data frame you give them, while {gtsummary} starts *before* the table exists. It takes raw data or a model, runs the statistics (using {broom} to tidy model output), finds things like reference rows on its own, and then hands back a table I can keep styling with {gt} through `as_gt()`. It is also not locked to {gt}: it can print through {flextable}, {kableExtra}, or {huxtable} instead.
+
+## Prompt 2.2: Three Things I Learned That Were New
+
+::: prompt
+2.2. Give three things you learned newly that were not explained in the lecture in Step 1.
+:::
+
+::: incremental
+1.  **`inline_text()` puts results into sentences.** Sjoberg pointed out that reproducible tables are only half the job, because we also report those numbers in the text. You pass `inline_text()` a finished table and the variable you want, and it writes something like "1.02 (95% CI 1.00, 1.04; p=0.10)" straight into the report. The `pattern` argument changes the format. I used it later in this deck, so every regression number in my interpretation comes from the table itself.
+
+2.  **Print engines beyond {gt}.** {gt} looks great in HTML, but its Word and RTF output was still being built. If {flextable} is installed, a Word document from R Markdown or Quarto will automatically print the table with {flextable}. You can also convert with `as_flex_table()`, `as_kable_extra()`, or `as_hux_table()`, which Sjoberg uses to save raw LaTeX code so he never builds a LaTeX table by hand. For me this matters because clients and committees often want a .docx.
+
+3.  **Themes do much more than journal styles.** Dr. Jung showed the JAMA and QJE journal themes. Sjoberg added that themes **stack** (the last one called wins), that `reset_gtsummary_theme()` undoes them, that there are **language themes** that translate tables into about 14 languages, and that `theme_gtsummary_compact()` shrinks the font and padding so tables do not run past a page. You can even build your own theme to set p-value rounding, row striping, and a date stamp for every table at once. This deck uses the compact theme.
+:::
+
+::: aside
+Other things from the talk that were new to me: `show_header_names()` for finding column names to relabel, `tbl_strata()` for stratified tables, `tbl_svysummary()` for survey data, and writing a custom `tidy_fun` when a model type is not supported.
+:::
+
+::: notes
+The design idea behind all three is the same: keep the analysis and the reporting connected, so nothing gets retyped.
+:::
+
+# Prompts 3 and 4: Applying It to Our CEP Data {.section-slide background-color="#f4efe6"}
+
+## The Data: CCHM Admissions Funnel
+
+```{r}
+#| label: load-data
+
+# Applicant level admissions records from CCHM (team data, kept out of GitHub)
+applicants_raw <- read.delim("data/Applicant Detail.csv",
+                             fileEncoding = "UTF-16",
+                             check.names = FALSE)
+
+# Keep only the analysis columns, which drops names and IDs right away
+applicants <- applicants_raw |>
+  select(admitted    = ADMITS,
+         deposit     = `EC DEPOSIT`,
+         enrolled    = ENROLLED,
+         tier        = Tier,
+         eop         = `EOP Interest N`,
+         hs_gpa      = `HS GPA`,
+         hs_math_gpa = `HS Math GPA`) |>
+  mutate(
+    tier = case_match(trimws(tier),
+                      "T1-Local"        ~ "Local",
+                      "T2-California"   ~ "Rest of California",
+                      c("T3-Out of state", "T4-Non-US") ~ "Out of state or international",
+                      .default = NA_character_) |>
+      factor(levels = c("Local", "Rest of California", "Out of state or international")),
+    eop = if_else(trimws(eop) == "Y", "Yes", "No", missing = "No") |>
+      factor(levels = c("No", "Yes")),
+    enrolled_f = factor(enrolled, levels = c(0, 1),
+                        labels = c("Did not enroll", "Enrolled"))
+  )
+
+admits <- applicants |> filter(admitted == 1)
+```
+
+This connects to my analytics objective (AO3): where CCHM loses prospective students between applying and enrolling. Of the **`r nrow(applicants)`** first time applicants in the file, **`r sum(applicants$admitted)`** were admitted, **`r sum(applicants$deposit)`** paid an enrollment deposit, and **`r sum(applicants$enrolled)`** enrolled.[^1] Prompts 3 and 4 look only at admitted students and ask what separates the ones who enrolled from the ones who did not.
+
+[^1]: Fall 2026 first time freshman applicants to Hospitality Management, from the CCHM admissions records shared with CEP Group 3.
+
+::: notes
+The file has student names and IDs, so the select() step keeps only the seven analysis columns before anything else happens, and the data folder is excluded from GitHub.
+:::
+
+## A Quick Look Before Testing
+
+```{r}
+#| label: tbl-overview
+#| output-location: slide
+
+admits |>
+  tbl_summary(
+    by = enrolled_f,
+    include = c(hs_gpa, hs_math_gpa, tier, eop),
+    label = list(hs_gpa      ~ "High school GPA",
+                 hs_math_gpa ~ "High school math GPA",
+                 tier        ~ "Applicant tier",
+                 eop         ~ "EOP interest")
+  ) |>
+  add_overall() |>
+  add_p() |>
+  modify_spanning_header(c("stat_1", "stat_2") ~ "**Fall 2026 outcome**") |>
+  modify_caption("**Admitted students by enrollment outcome**") |>
+  bold_labels()
+```
+
+# Prompt 3: Cross Tabulation {.section-slide background-color="#f4efe6"}
+
+## Prompt 3: Is Where a Student Lives Linked to Enrolling? {transition="zoom"}
+
+::: prompt
+Apply what you learned to your MSDM CEP data. Choose two appropriate variables for cross-tabulation and show if the two variables are associated or not. Use appropriate statistics to test if the two variables are associated. Code, produce the table, and interpret the result.
+:::
+
+::::: columns
+::: {.column width="40%"}
+**Variables**
+
+- **Applicant tier** (categorical): Local, Rest of California, or Out of state or international
+- **Fall 2026 outcome** (categorical): enrolled or did not enroll
+
+**Test:** Both variables are categorical, so the right test is Pearson's chi-square test of independence.
+
+**Hypotheses**
+
+- H0: tier and enrollment are independent
+- H1: tier and enrollment are associated
+:::
+
+::: {.column width="60%"}
+```{r}
+#| label: tbl-cross
+
+t_cross <- admits |>
+  tbl_cross(
+    row = tier,
+    col = enrolled_f,
+    percent = "row",
+    label = list(tier       ~ "Applicant tier",
+                 enrolled_f ~ "Fall 2026 outcome")
+  ) |>
+  add_p() |>
+  bold_labels()
+
+t_cross
+
+# Same test run directly, for the numbers in the text
+chisq_res <- chisq.test(table(admits$tier, admits$enrolled_f))
+```
+:::
+:::::
+
+## Prompt 3: Interpretation
+
+::: incremental
+- The chi-square test gives χ² = `r style_number(chisq_res$statistic, digits = 2)` with `r chisq_res$parameter` degrees of freedom, `r style_pvalue(chisq_res$p.value, prepend_p = TRUE)`. That is below 0.05, so I **reject H0**: applicant tier and enrollment are associated.
+- The row percentages show how. About half of admitted **local** students enrolled, compared with less than a quarter of admitted students from **the rest of California**. Out of state and international admits fell in between.
+- The smallest expected cell count is `r style_number(min(chisq_res$expected), digits = 1)`, which is above 5, so the chi-square test is appropriate here and Fisher's exact test is not needed.
+:::
+
+::: {.fragment .takeaway}
+Most of CCHM's admits come from California outside the local area, and that is also the group least likely to enroll. That is where the funnel leaks the most.
+:::
+
+::: aside
+This fits Chapman's [-@chapman1981] college choice model, where location is one of the fixed college characteristics that shapes the final decision.
+:::
+
+::: notes
+The local group is small (under 30 admits), so the gap is large but the local estimate itself is less precise. The test still holds because the expected counts are large enough.
+:::
+
+# Prompt 4: Multiple Regression {.section-slide background-color="#f4efe6"}
+
+## Prompt 4: What Predicts Enrollment After Admission?
+
+::: prompt
+Using the MSDM CEP data, run multiple regression. The dependent variable can be continuous or dichotomous. Regress a dependent variable on a set of independent variables. Code, produce the table, and interpret the result.
+:::
+
+::::: columns
+::: {.column width="45%"}
+**Dependent variable:** enrolled (1) vs. did not enroll (0). It is dichotomous, so I used a **multiple logistic regression**.
+
+**Independent variables**
+
+- High school GPA
+- High school math GPA
+- Applicant tier (Local is the reference group)
+- EOP interest (No is the reference group)
+
+The table reports **odds ratios**. An odds ratio above 1 means higher odds of enrolling, below 1 means lower odds, and a confidence interval that crosses 1 means the effect is not statistically significant.
+:::
+
+::: {.column width="55%"}
+```{r}
+#| label: model
+
+m1 <- glm(enrolled ~ hs_gpa + hs_math_gpa + tier + eop,
+          data = admits,
+          family = binomial(link = "logit"))
+
+reg_labels <- list(hs_gpa      ~ "High school GPA",
+                   hs_math_gpa ~ "High school math GPA",
+                   tier        ~ "Applicant tier",
+                   eop         ~ "EOP interest")
+
+# Base table (used for inline_text in the interpretation)
+t_reg <- tbl_regression(m1, exponentiate = TRUE, label = reg_labels)
+```
+:::
+:::::
+
+## Prompt 4: Regression Table
+
+```{r}
+#| label: tbl-regression
+
+t_reg |>
+  add_global_p(keep = TRUE) |>
+  bold_p(t = 0.05) |>
+  bold_labels() |>
+  add_glance_table(include = c(nobs, logLik, AIC, BIC)) |>
+  modify_caption("**Logistic regression of enrollment on applicant characteristics (odds ratios)**")
+```
+
+## Prompt 4: Each Predictor Alone vs. Together
+
+`tbl_uvregression()` fits one model per predictor, and `tbl_merge()` puts those next to the full model, which shows whether a variable's effect holds up once the others are controlled.
+
+```{r}
+#| label: tbl-merge
+#| output-location: slide
+
+t_uv <- admits |>
+  select(enrolled, hs_gpa, hs_math_gpa, tier, eop) |>
+  tbl_uvregression(
+    method = glm,
+    y = enrolled,
+    method.args = list(family = binomial),
+    exponentiate = TRUE,
+    label = reg_labels
+  ) |>
+  bold_labels()
+
+tbl_merge(
+  tbls = list(t_uv, t_reg),
+  tab_spanner = c("**Each predictor alone**", "**All predictors together**")
+)
+```
+
+## Prompt 4: Interpretation
+
+::: incremental
+- **Applicant tier is the only significant predictor.** Holding GPA, math GPA, and EOP interest constant, admits from the rest of California had lower odds of enrolling than local admits: `r inline_text(t_reg, variable = tier, level = "Rest of California")`. An odds ratio near 0.26 means their odds of enrolling were roughly a quarter of a local student's odds.
+- **Out of state and international** admits: `r inline_text(t_reg, variable = tier, level = "Out of state or international")`. The confidence interval crosses 1, so there is no clear difference from local students. This group is small, so the estimate is not very precise.
+- **Academic preparation did not predict enrolling.** High school GPA (`r inline_text(t_reg, variable = hs_gpa)`) and math GPA (`r inline_text(t_reg, variable = hs_math_gpa)`) were both not significant. Both odds ratios sit a little below 1, which hints that stronger students may have more competing offers, but the data cannot confirm that.
+- **EOP interest** made no meaningful difference: `r inline_text(t_reg, variable = eop, level = "Yes")`.
+:::
+
+## Prompt 4: What It Means for CCHM
+
+::: {.fragment .takeaway}
+Once a student is admitted, *where they live* says more about whether they enroll than *how strong a student they are*.
+:::
+
+::: fragment
+- The model's fit statistics show these four variables explain only a small part of the decision. That makes sense: the records do not capture cost, financial aid, campus visits, or outreach after admission, which are the factors my AO3 survey of current students is designed to measure.
+- For recruiting, this points to the admitted students from the rest of California as the group to focus on between admission and the deposit deadline, with messaging that makes the move to Pomona feel doable.
+:::
+
+::: notes
+Every number in the regression bullets comes from inline_text(), so the text matches the table exactly. That was one of the three new things from Sjoberg's talk.
+:::
+
+# References and Links {.section-slide background-color="#f4efe6"}
+
+## Links
+
+- **GitHub Pages:** <https://naran115.github.io/m08-gtsummary/Naranjo,%20Aldo-M08-Reflection%20Essay-gtsummary.html>
+- **GitHub Repo:** <https://github.com/naran115/m08-gtsummary>
+
+::: small-note
+The CCHM admissions file is not included in the repo because it contains student names and IDs.
+:::
+
+## References
+
+::: {#refs}
+:::

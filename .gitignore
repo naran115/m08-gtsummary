@@ -1,0 +1,8 @@
+# Client data stays off GitHub (contains student names and IDs)
+data/
+*.csv
+*.zip
+_freeze/
+.Rproj.user/
+.Rhistory
+.RData
